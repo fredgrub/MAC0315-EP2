@@ -1,131 +1,150 @@
 function [ind v] = simplex(A,b,c,m,n,x,bind,Binv)
-  optimal = false;
-  count = 0;
-  disp("Simplex: Fase 2\n")
-  rule = -1;
+% Revised Simplex method (phase two) for solving the linear programming problem
+% min c'x subject to Ax = b, x >= 0
+%
+% Input: A, b, c, m, n, x, bind, Binv
+% A = m x n constraint matrix
+% b = m x 1 right-hand side vector
+% c = n x 1 cost vector
+% m = number of constraints
+% n = number of variables
+% x = n x 1 initial basic feasible solution
+% bind = m x 1 vector of indices of basic variables
+% Binv = m x m inverse of the basis matrix
+%
+% Output: ind, v
+% ind = 0 if the solution is optimal
+% ind = -1 if the solution is unbounded
+% v = optimal solution if ind = 0
+% v = unbounded direction if ind = -1
+
+printf('Método Simplex Revisado (fase 2)\n')
+iter = 0;
+rule = "min";
+
+while 1
+  printf('*** Iteração #%d ***\n\n',iter);
+  iter = iter + 1;
+
+  % Display the indices of the basic variables and the respective values of the basic variables
+  printf('Variáveis básicas:\n');
+  for i = 1:m
+    printf('x%d = %f\n',bind(i),x(bind(i)));
+  end
+  printf('\n');
+
+  % Display current objective function value
+  printf('Custo atual da função objetivo: %f\n\n',c'*x);
+
+  % Compute vector of simplex multipliers (z = p')
+  z = c(bind)'*Binv;
+
+  % Compute non-basic index set
+  nonbind = setdiff(1:n,bind);
+
+  % Compute reduced costs for non-basic variables (basic variables have reduced cost 0)
+  rc = c(nonbind) - (z*A(:,nonbind))';
   
-  while !optimal
-    # contador para as iterações
-    printf("Iterando %i\n", count);
-    count += 1;
-  
-    # imprime a solução viável básica atual
-    printf("%i %f \n", [bind'; x(bind)']);
-    printf("\nValor função objetivo: %f\n\n", c' * x);
-    
-    # índices das variáveis não-básicas
-    indexes = [1:n];
-    nonbasic = indexes(~ismember(indexes, bind));
-    
-    # vetor p usado para calcular os custos reduzidos
-    p = (c(bind)' * Binv)';
-    
-    # custos reduzidos das variáveis não-basicas:
-    # arrayfun mapeia a função que calcula o custo dado o índice
-    # no vetor dos índices das variáveis não-básicas
-    c_jbars = arrayfun(@(j) c(j) - (p' * A(:, j)), nonbasic);
-    
-    # imprime os custos reduzidos atuais
-    printf("Custos reduzidos\n");
-    printf("%i %f\n", [nonbasic; c_jbars]);
-    
-    # se nenhum custo reduzido é negativo, a solução ótima
-    negative_c_jbars = c_jbars(c_jbars < 0);
-    if isempty(negative_c_jbars)
+  % Display reduced costs and indices of non-basic variables
+  printf('Custos reduzidos (não-básica):\n');
+  for i = 1:length(nonbind)
+    printf('rc(x%d) = %f\n',nonbind(i),rc(i));
+  end
+  printf('\n');
+
+  % Check optimality
+  if isempty(rc(rc < 0))
       ind = 0;
       v = x;
-      printf("\nSolução ótima encontrada com custo %f:\n", c' * x);
-      printf("%i %f\n", [1:n; v']);
+      printf('Solução ótima encontrada. Valor da função objetivo: %f\n',c'*x);
+      for i = 1:n
+        printf('x%d = %f\n',i,x(i));
+      end
       return
-    endif
-    
-    chosen_j = -1;    
-    switch (rule)
-      case 1 # custo reduzido mais negativo
-        chosen_j = find(c == min(c))
-      otherwise # regra de Bland
-        for j = 1:(n-m)
-          if c_jbars(j) < 0
-            chosen_j = nonbasic(j);
-            break;
-          endif
-        endfor
-    endswitch
-      
-      
-    endswitch
-    
-    # imprime o índice escolhido para entrar na base
-    printf("\nEntra na base: %i\n\n", chosen_j);
+  end
 
-    # vetor u
-    u = Binv * A(:, chosen_j);
-    
-    # direção d
-    d = zeros(n, 1);
-    d(chosen_j) = 1;
-    d(bind) = -u;
-    
-    # se u não tem componentes positivas, o custo ótimo é infinito na direção d
-    if isempty(u(u > 0))
+  % Select entering variable (using Bland's rule or minimum reduced cost rule)
+  if strcmp(rule, "bland") == 1
+    for i = 1:length(nonbind)
+      if rc(i) < 0
+        j = nonbind(i);
+        break
+      end
+    end
+  elseif strcmp(rule, "min") == 1
+    j = nonbind(min(find(rc == min(rc))));
+  endif
+ 
+  % Display entering variable
+  printf('Entra na base: x%d\n\n',j);
+
+  % Compute direction vector
+  u = Binv*A(:,j);
+
+  % Check unboundedness
+  if all(u <= 0)
       ind = -1;
+      % Calculate unbounded direction
+      d = zeros(n,1);
+      d(j) = 1;
+      d(bind) = -u;
       v = d;
-      printf("Custo ótimo é INFINITO na direção:\n");
-      printf("%i %f\n", [1:n; v']);
+      printf('Solução Ilimitada.\n');
+      printf('Direção ilimitada:\n');
+      for i = 1:n
+        printf('d%d = %f\n',i,d(i));
+      end
       return
-    endif
-    
-    # imprime as componentes básicas da direção básica
-    printf("Direção\n");
-    printf("%i %f\n", [bind'; d(bind)']);
-    
-    # agora procuramos theta*
-    l = 0;
-    thetastar = intmax;
+  end
 
-    # varremos todos os índices com u(i) positivo e calculamos o x(bind(i))/u(i)
-    # e selecionamos o menor
-    # em caso de empate, escolhemos o i de menor bind(i)
-    for i = 1:m
-      if u(i) > 0
-        theta = x(bind(i)) / u(i);
-        if theta < thetastar || (abs(theta-thetastar) < eps && bind(i) < bind(l))
-          thetastar = theta;
-          l = i;
-        endif
-      endif
-    endfor
-    
-    printf("\nTheta*\n");
-    printf("%f\n\n", thetastar);
-    
-    # o indice l da base (que é o indice bind(l) da solucao) é escolhido pra sair
-    printf("Sai da base: %i\n\n", bind(l));
+  % Display the indices of the basic variables and the respective values of the direction vector
+  printf('Vetor de direção (apenas índices básicos):\n');
+  for i = 1:m
+    printf('d%d = %f\n',bind(i),-u(i));
+  end
+  printf('\n');
 
-    # nova solucao y
-    y = zeros(n, 1);
+  % Compute step length (select leaving variable using Bland's rule)
+  l = 0;
+  theta_star = inf;
+  for i = 1:m
+    if u(i) > 0
+      theta = x(bind(i))/u(i);
+      if theta < theta_star || (abs(theta - theta_star) < eps && bind(i) < bind(l))
+        theta_star = theta;
+        l = i;
+      end
+    end
+  end
 
-    for i = 1:m
-      if i == l
-        continue
-      endif;
-      y(bind(i)) = x(bind(i)) - thetastar * u(i);
-    endfor;
+  % Display step length
+  printf('Theta*: %f\n\n', theta_star);
 
-    y(chosen_j) = thetastar;
+  % Display leaving variable
+  printf('Sai da base: x%d\n\n',bind(l));
 
-    # nova matriz inversa B
-    tempB = [Binv u];
+  % Update basic solution
+  x(j) = theta_star;
+  x(bind) = x(bind) - theta_star*u;
 
-    # operacoes para arrumar a ultima coluna
-    Q = eye(m);
-    Q(:, l) = -u ./ u(l);
-    Q(l, l) = 1 / u(l);
+  % Update basis
+  bind(l) = j;
 
-    newBinv = Q * tempB;
+  % Update inverse of the basis matrix using elementary row operations
+  Binv_u = [Binv u];
 
-    # atualizamos as variaveis para a proxima iteracao
-    Binv = newBinv(:, 1:m);
-    x = y;
-    bind(l) = chosen_j;
-  endwhile
+  % Elementary row operations
+  Q = eye(m);
+  Q(:, l) = -u ./ u(l);
+  Q(l, l) = 1 / u(l);
+  Binv_u = Q * Binv_u;
+  
+  % Update inverse of the basis matrix
+  Binv = Binv_u(:, 1:m);
+
+  if iter > 3
+    printf('Número máximo de iterações atingido.\n');
+    return
+  end
+end
+endfunction
