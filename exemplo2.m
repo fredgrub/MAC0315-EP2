@@ -5,8 +5,8 @@ c = [-1;-1;-1;-1;0;0];
 m = 2;
 n = 6;
 
-x = [0; 0; 0; 0; 20; 20];
-bind = [5;6];
+x = [0; 0; -5; 0; 0; 22];
+bind = [3;6];
 Binv = inv([A(:,bind)]);
 
 [ind v] = simplex (A,b,c,m,n,x,bind,Binv);
