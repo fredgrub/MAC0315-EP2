@@ -9,4 +9,4 @@ x = [0; 0; -5; 0; 0; 22];
 bind = [3;6];
 Binv = inv([A(:,bind)]);
 
-[ind v] = simplex (A,b,c,m,n,x,bind,Binv);
+[ind v] = simplex_ph2 (A,b,c,m,n,x,bind,Binv);
