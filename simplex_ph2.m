@@ -141,10 +141,5 @@ while 1
   
   % Update inverse of the basis matrix
   Binv = Binv_u(:, 1:m);
-
-  if iter > 3
-    printf('Número máximo de iterações atingido.\n');
-    return
-  end
 end
 endfunction
