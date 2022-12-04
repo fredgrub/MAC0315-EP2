@@ -1,4 +1,4 @@
-function [ind v] = simplex(A,b,c,m,n,x,bind,Binv)
+function [ind v] = simplex_ph2(A,b,c,m,n,x,bind,Binv)
 % Revised Simplex method (phase two) for solving the linear programming problem
 % min c'x subject to Ax = b, x >= 0
 %
