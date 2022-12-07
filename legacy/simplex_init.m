@@ -38,5 +38,47 @@
 %
 
 function [ind,x,bind,nbind] = simplex_init(A,b,c,m,n)
-    
+  
+  prinf("Fase 1\n")
+  
+  % Guarantees viability
+  for i = 1:m
+    if b(i) < 0
+      A(i,:) = -A(i,:);
+      b(i) = -b(i);
+    endif
+  endfor
+  
+  % Introduce auxiliary variables
+  D = [A eye(m)];
+  c_aux = [zeros(n,1); ones(m,1)];
+  bind = n+1:n+m;
+  nbind = 1:n;
+  x = zeros(n,1);
+  x(bind) = b;
+  
+  ind = 2; % ensure we execute at least one step
+  
+  % Simplex phase two iterations
+  while ind == 2
+    [ind,x,bind,nbind,Binv] = simplex_step(D,b,c_aux,m,n+m,x,bind,nbind,Binv)
+  endwhile
+  
+  % Check for positive optimal cost in the auxiliary problem
+  if c_aux(bind)' * x(bind) > 0:
+    ind = 1;
+    return
+  else
+    art = intersect(bind,n+1:n+m)
+    while ~isempty(art) % checks for artifical variables in the basis
+      l = art(1);
+      us = Binv * A;
+      if´
+    endwhile
+    ind == 0;
+    nbind = setdiff(1:n,bind);
+    x(nbind) = zeros(n-m,1);
+    return
+  endif
+  
 endfunction

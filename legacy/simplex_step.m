@@ -1,4 +1,4 @@
-% Author: Lucas de Sousa Rosa
+% Author: Lucas de Sousa Rosa & Gabriel Schwartz
 % Date: 05/12/2022
 %
 % ------------------------------------------------------------------------
@@ -31,7 +31,7 @@
 %   ind =  0 the problem has optimal solution
 %   ind =  2 simplex method step completed
 %  
-% x - (m,1) basic feasible solution after one step
+% x - (n,1) basic feasible solution after one step
 % bind - (m,1) indices of basic variables after one step
 % nbind - (n-m,1) indices of nonbasic variables after one step
 % Binv - (m,m) inverse matrix of the basis B after one step
